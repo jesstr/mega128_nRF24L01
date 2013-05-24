@@ -2,8 +2,8 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include "spi.h"
-#include "nRF24L01.h"
 
+/* IO pins initialization used to control nRF24L01 module */
 void nRF24L01_Init(void)
 {
 	CE_DDR|=(1<<CE_PIN);
@@ -11,6 +11,7 @@ void nRF24L01_Init(void)
 	IRQ_DDR&=~(1<<IRQ_PIN);		
 }
 
+/* Data send routine */
 void nRF24L01_SendData(unsigned char *data, unsigned char length)
 {
 	SPI_CS1_LOW;
@@ -25,7 +26,7 @@ void nRF24L01_SendData(unsigned char *data, unsigned char length)
 	CE_PULSE;	
 }
 
-
+/* Setting of RXPayLoad parameter */
 void nRF24L01_SetRXPayloadLenght(unsigned char length)
 {
 	SPI_CS1_LOW;
@@ -34,7 +35,7 @@ void nRF24L01_SetRXPayloadLenght(unsigned char length)
 	SPI_CS1_HIGH;	
 }
 
-
+/* Switch receive mode on */
 void nRF24L01_Receive_On(void)
 {
 	unsigned char buff;
@@ -51,7 +52,7 @@ void nRF24L01_Receive_On(void)
 	_delay_us(2);		
 }
 
-
+/* Switch receive mode off */
 void nRF24L01_Receive_Off(void)
 {
 	unsigned char buff;
@@ -68,7 +69,7 @@ void nRF24L01_Receive_Off(void)
 	_delay_us(2);		
 }
 
-
+/* Get received data */
 void nRF24L01_ReadData(unsigned char *data)
 {
 	SPI_CS1_LOW;
@@ -76,6 +77,7 @@ void nRF24L01_ReadData(unsigned char *data)
 	SPI_CS1_HIGH;		
 }
 
+/* Switch to Standby 1 mode */
 void nRF24L01_Standby_1(void)
 {
 	unsigned char buff;
@@ -90,6 +92,7 @@ void nRF24L01_Standby_1(void)
 	SPI_CS1_HIGH;
 }
 
+/* Switch to Power Down mode */
 void nRF24L01_PowerDown(void)
 {
 	unsigned char buff;
@@ -104,6 +107,7 @@ void nRF24L01_PowerDown(void)
 	SPI_CS1_HIGH;		
 }
 
+/* Get the status of the module */
 unsigned char nRF24L01_GetStatus(void)
 {
 	unsigned char buff;
@@ -113,6 +117,7 @@ unsigned char nRF24L01_GetStatus(void)
 	return buff;		
 }
 
+/* Read config settings from the module */
 unsigned char nRF24L01_GetSConfig(void)
 {
 	unsigned char buff;

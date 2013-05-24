@@ -1,13 +1,12 @@
 #include <avr/io.h>
-#include "spi.h"
    
    // Инициализация аппаратного SPI в режиме Master
   void SPI_Init_Master(void)
   {
 	SPI_DDR |= _BV(CS1) | _BV(SCK) | _BV(MOSI);	
 	//SPCR = (1<<SPE)|(1<<MSTR)|(1<<SPR0)|(1<<CPHA);	/* Enable SPI mode 1, Master, set clock rate fck/16 */
-	SPCR = (1<<SPE)|(1<<MSTR)|(1<<SPR0);				/* Enable SPI mode 0, Master, set clock rate fck/16 */
-	SPI_CS_PORT|= _BV(CS1);
+	SPCR = (1<<SPE)|(1<<MSTR)|(1<<SPR0);			/* Enable SPI mode 0, Master, set clock rate fck/16 */
+	SPI_CS1_HIGH;
   }
    
    // Инициализация аппаратного SPI в режиме Slave
@@ -51,3 +50,17 @@
 			; 
 		return SPDR;
   }  
+
+/* Transfer byte from Master */
+unsigned char SPI_TransByte_Master(unsigned char)
+{
+
+}
+
+/* Transfer byte from Slave */
+unsigned char SPI_TransByte_Slave(unsigned char)
+{
+
+} 
+
+ 

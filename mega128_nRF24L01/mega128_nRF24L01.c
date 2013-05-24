@@ -14,10 +14,11 @@
 #include "nRF24L01.h"
 #include "wh_lcd.h"
 
-#define RXPayloadLenght 3	// Фиксированная длинна пакета данных 
+#define RXPayloadLenght 3			/* Fixed RX data packet length in bytes */ 
+#define TXPayloadLenght RXPayloadLenght		/* Fixed TX data packet length in bytes */ 
 
 unsigned char rx_payload[RXPayloadLenght];
-unsigned char tx_payload[RXPayloadLenght]={0x31,0x32,0x33};
+unsigned char tx_payload[TXPayloadLenght]={0x31,0x32,0x33};
 
 volatile unsigned char re=0;
 
