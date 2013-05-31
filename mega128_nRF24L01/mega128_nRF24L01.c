@@ -16,6 +16,7 @@
 #include "spi.h"
 #include "nRF24L01.h"
 #include "wh_lcd.h"
+#include "commands.h"
 
 #define RXPayloadLenght 3					/* Fixed RX data packet length in bytes */ 
 #define TXPayloadLenght RXPayloadLenght		/* Fixed TX data packet length in bytes */ 
@@ -164,8 +165,24 @@ int main(void)
 	/* Main loop */
     while(1)
     {
+		/* test */
+		tx_payload[0]=COMM_ON;
 		nRF24L01_SendData(tx_payload, RXPayloadLenght);
+		_delay_ms(1000);
+		tx_payload[0]=COMM_SLOWFLASH;
+		nRF24L01_SendData(tx_payload, RXPayloadLenght);
+		_delay_ms(1000);
+		tx_payload[0]=COMM_FASTFLASH;
+		nRF24L01_SendData(tx_payload, RXPayloadLenght);
+		_delay_ms(1000);
+		tx_payload[0]=COMM_INSTANT;
+		nRF24L01_SendData(tx_payload, RXPayloadLenght);
+		_delay_ms(1000);
+		tx_payload[0]=COMM_OFF;
+		nRF24L01_SendData(tx_payload, RXPayloadLenght);
+		_delay_ms(2000);
 		
+		#if 0
 		/* LCD debug output */
 		LcdWriteCom(FIRST_STRING);
 		LcdWriteString("        ");
@@ -179,5 +196,6 @@ int main(void)
 		
 		count++;
 		_delay_ms(1000);
-    }
+		#endif    
+	}
 }
