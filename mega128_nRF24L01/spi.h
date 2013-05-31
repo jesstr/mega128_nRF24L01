@@ -8,14 +8,14 @@
 #define SPI_CS_PORT 	PORTB
 
 //Определение пинов аппаратного SPI
-#define CS1		0
+#define CS1_HARDW	0
 //#define CS2	
 //#define CS3	
-#define MISO		3
-#define MOSI		2
-#define SCK		1
+#define MISO_HARDW		3
+#define MOSI_HARDW		2
+#define SCK_HARDW		1
 
-#ifdef 0
+#if 0
 //Определение портов SPI через UART
 #define SPI_UART_DDR		DDRE
 #define SPI_UART_CS_DDR		DDRE
@@ -30,8 +30,8 @@
 #define SCK_UART	2
 #endif
 
-#define SPI_CS1_LOW 	SPI_CS_PORT&=~_BV(CS1)
-#define SPI_CS1_HIGH 	SPI_CS_PORT|=_BV(CS1)
+#define SPI_CS1_LOW 	SPI_CS_PORT&=~_BV(CS1_HARDW)
+#define SPI_CS1_HIGH 	SPI_CS_PORT|=_BV(CS1_HARDW)
    
 // Инициализация аппаратного SPI в режиме Master
 void SPI_Init_Master(void);

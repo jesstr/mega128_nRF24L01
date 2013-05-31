@@ -3,164 +3,180 @@
  *
  * Created: 17.07.2012 11:26:44
  *  Author: Черствов
- */ 
-#define F_CPU 16000000
+ */
+
+/*FCU must be defined at "Properties->Toolchain->Symbols" as "F_CPU=16000000". */ 
+/* #define F_CPU 16000000 */ 
 
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
+#include <stdlib.h>
 #include "uart.h"
 #include "spi.h"
 #include "nRF24L01.h"
 #include "wh_lcd.h"
 
-#define RXPayloadLenght 3			/* Fixed RX data packet length in bytes */ 
+#define RXPayloadLenght 3					/* Fixed RX data packet length in bytes */ 
 #define TXPayloadLenght RXPayloadLenght		/* Fixed TX data packet length in bytes */ 
 
-unsigned char rx_payload[RXPayloadLenght];
-unsigned char tx_payload[TXPayloadLenght]={0x31,0x32,0x33};
+unsigned char rx_payload[RXPayloadLenght+1];
+unsigned char tx_payload[TXPayloadLenght+1]={0x01,0x02,0x03,0x00};
 
 volatile unsigned char re=0;
 
+
 char *IntToStr(int value, int radix)
 {
-char buffer[8];
-char *ptr;
-ptr = itoa(value, buffer, radix);
-return ptr;
+	char buffer[8];
+	char *ptr;
+	ptr = itoa(value, buffer, radix);
+	return ptr;
 }
 
 
+/* Interrupts first initialization */
+void IRQ_Init(void)
+{
+	EIMSK|=(1<<INT0);
+}
+
+
+/* UART RX interrupt handle */
 ISR(USART1_RX_vect)
 {
 	unsigned char buff=UDR1;
+	if (tx_payload[0]==0x01) tx_payload[0]=0x02;
+		else tx_payload[0]=0x01;
 }
 
 
+/* INT0 interrupt handle, connected to the nRF24L01 "IRQ" pin */
 ISR(INT0_vect)
 {
 	unsigned char buff, i=0;
 	
+	/* Reading the status register */
 	SPI_CS1_LOW;
-	buff=SPI_ReceiveByte_Master(); //чтение статусного регистра
+	buff=SPI_ReceiveByte_Master();
 	SPI_CS1_HIGH;
-// 	UART1_SendString("Status: ");
-// 	UART1_SendString(IntToStr(buff,16));
-// 	UART1_SendString("\x0A\x0D");
 	
-	switch ((buff)&(0x70)) // Проверка флагов прерываний в статусном регистре
-	{
-		case 0x40: // RX_DR - приход данных
-		{
+	/* UART debug output */
+ 	UART1_SendString("Status: ");
+ 	UART1_SendString(IntToStr(buff,16));
+ 	UART1_SendString("\x0A\x0D");
+	
+	/* Checking interrupt flags in status register */
+	switch ((buff)&(0x70)) {
+		/* RX_DR - RX data ready */
+		case 0x40: {
+			/* UART debug output */
 			UART1_SendString("RX_DR"); 
 			
 			CE_LOW;
 			
-			//чтение буфера приема
+			/* reading RX buffer */
 			SPI_CS1_LOW; 
 			SPI_SendByte_Master(R_RX_PAYLOAD); 
 			while (i<RXPayloadLenght) { rx_payload[i++]=SPI_ReceiveByte_Master(); }
 			SPI_CS1_HIGH;
 			
-//			rx_payload[RXPayloadLenght]=0x00; 
+			rx_payload[RXPayloadLenght]=0x00; 
 			
-// 			UART1_SendByte(IntToStr(nRF24L01_GetStatus(rx_payload[0]),16));
-// 			UART1_SendByte(IntToStr(nRF24L01_GetStatus(rx_payload[1]),16));
-// 			UART1_SendByte(IntToStr(nRF24L01_GetStatus(rx_payload[2]),16));
-			
-//			UART1_SendString(rx_payload); 
+			/* UART debug output */
+			UART1_SendString(IntToStr(rx_payload[0],16)); 
 			
 			_delay_us(2);
 			
-			//сброс флага прерывания
+			/* Clearing IRQ flag */
 			SPI_CS1_LOW; 
 			SPI_SendByte_Master(W_REGISTER|STATUS); 
 			SPI_SendByte_Master(buff|(0x40)); 
 			SPI_CS1_HIGH; 
 			
-			
-//			UART1_SendString(IntToStr(nRF24L01_GetStatus(),16));
+			/* UART debug output */
+			UART1_SendString(IntToStr(nRF24L01_GetStatus(),16));
 			
 			CE_HIGH;
 
-			
 			break;  
-		}		
-		case 0x20: // TX_DS - данные отправлены
-		{
+		}	
+			/* TX_DS - data sent */	
+		case 0x20: {
+			/* UART debug output */
 			UART1_SendString("TX_DS"); 
 			
-			//сброс флага прерывания
+			/* Clearing IRQ flag */
 			SPI_CS1_LOW; 
 			SPI_SendByte_Master(W_REGISTER|STATUS); 
 			SPI_SendByte_Master(buff|(0x20));
 			SPI_CS1_HIGH; 
 			
-// 			LcdWriteCom(SECOND_STRING);
-// 			LcdWriteString("   ");
+			/* LCD debug output */
 			LcdWriteCom(SECOND_STRING);
 			LcdWriteString("OK  ");
 			
 			break;  
 		}		
-		case 0x10: // MAX_RT - Достигнут лимит повторов отправки
-		{
+		/* Error: MAX count of TX attempts reached */
+		case 0x10: {
+			/* UART debug output */
 			UART1_SendString("MAX_RT"); 
 			
+			/* clearing IRQ flag */		
 			SPI_CS1_LOW; 
 			SPI_SendByte_Master(W_REGISTER|STATUS); 
 			SPI_SendByte_Master(buff|(0x10)); 
 			SPI_CS1_HIGH; 
 			
-// 			LcdWriteCom(SECOND_STRING);
-// 			LcdWriteString("   ");
+			/* LCD debug output */
 			LcdWriteCom(SECOND_STRING);
 			LcdWriteString("Fail");
 			
 			break;  
 		}		
 	}		
+	/* UART debug output */
 	UART1_SendString("\x0A\x0D");
-	
-	
 }
 
 
+/* Main routine */
 int main(void)
 {
-	unsigned char count; 
+	unsigned char count=0; 
 	
-	EIMSK=0x01;
-	
+	IRQ_Init();	
 	InitLcd();
 	nRF24L01_Init();
 	UART1_Init(MYUBRR);
 	SPI_Init_Master();
 	
- 	LcdWriteString("HELLO");
- 	UART1_SendString("HELLO");
-	
 	nRF24L01_Standby_1();
 	nRF24L01_SetRXPayloadLenght(RXPayloadLenght);
-//	nRF24L01_Receive_On();
+	//nRF24L01_Receive_On();
 	sei();
 	
-// 	UART1_SendString(IntToStr(nRF24L01_GetSConfig(),16));
-// 	UART1_SendByte(0x0A);
+	/* UART debug output */
+ 	UART1_SendString(IntToStr(nRF24L01_GetSConfig(),16));
+ 	UART1_SendByte(0x0A);
 	
-	
+	/* Main loop */
     while(1)
     {
-		
 		nRF24L01_SendData(tx_payload, RXPayloadLenght);
 		
+		/* LCD debug output */
 		LcdWriteCom(FIRST_STRING);
 		LcdWriteString("        ");
 		LcdWriteCom(FIRST_STRING);
 		LcdWriteString("Sent ");
 		LcdWriteString(IntToStr(count+1,10));	
+		
+		/* UART debug output */
 		UART1_SendString(IntToStr(count+1,10));
 		UART1_SendString("\x0A\x0D");
+		
 		count++;
 		_delay_ms(1000);
 			

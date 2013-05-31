@@ -2,13 +2,15 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include "spi.h"
+#include "nRF24L01.h"
 
 /* IO pins initialization used to control nRF24L01 module */
 void nRF24L01_Init(void)
 {
 	CE_DDR|=(1<<CE_PIN);
 	CE_PORT&=~(1<<CE_PIN);
-	IRQ_DDR&=~(1<<IRQ_PIN);		
+	IRQ_DDR&=~(1<<IRQ_PIN);	
+	IRQ_PORT|=(1<<IRQ_PIN);	
 }
 
 /* Data send routine */

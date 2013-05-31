@@ -26,7 +26,7 @@ void LcdWriteData(unsigned char data)
 
 void LcdWriteString(char string[8])
 {
-	char i;
+	unsigned char i;
 	for (i=0; string[i]!='\0'; i++)
 		{
 		LcdWriteData(string[i]);
