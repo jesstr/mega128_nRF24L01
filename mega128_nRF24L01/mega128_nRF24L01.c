@@ -75,7 +75,7 @@ ISR(INT0_vect)
 			
 			CE_LOW;
 			
-			/* reading RX buffer */
+			/* Reading RX buffer */
 			SPI_CS1_LOW; 
 			SPI_SendByte_Master(R_RX_PAYLOAD); 
 			while (i<RXPayloadLenght) { rx_payload[i++]=SPI_ReceiveByte_Master(); }
@@ -101,7 +101,7 @@ ISR(INT0_vect)
 
 			break;  
 		}	
-			/* TX_DS - data sent */	
+		/* TX_DS - data sent */	
 		case 0x20: {
 			/* UART debug output */
 			UART1_SendString("TX_DS"); 
@@ -123,7 +123,7 @@ ISR(INT0_vect)
 			/* UART debug output */
 			UART1_SendString("MAX_RT"); 
 			
-			/* clearing IRQ flag */		
+			/* Clearing IRQ flag */		
 			SPI_CS1_LOW; 
 			SPI_SendByte_Master(W_REGISTER|STATUS); 
 			SPI_SendByte_Master(buff|(0x10)); 
@@ -179,19 +179,5 @@ int main(void)
 		
 		count++;
 		_delay_ms(1000);
-			
-// 	if (re!=0) 
-// 		{
-// 			UART1_SendString("retransmit1\x0A");
-// 			nRF24L01_Receive_Off();
-// 			nRF24L01_SendData(rx_payload, RXPayloadLenght);
-// 			
-// 			LcdWriteCom(SECOND_STRING);
-// 			LcdWriteString("   ");
-// 			LcdWriteCom(SECOND_STRING);
-// 			LcdWriteString(rx_payload);
-// 			UART1_SendString("retransmit2\x0A");
-// 			re=0;
-// 		}
     }
 }
