@@ -17,12 +17,40 @@
 #include "nRF24L01.h"
 #include "wh_lcd.h"
 #include "commands.h"
+#include "buttons.h"
+
+/* Overall number of light modes */
+#define	LIGHT_MODES_NUMBER	3 
+/* Default light mode: 1 - COMM_INSTANT */
+#define DEFAULT_LIGHT_MODE  1
 
 #define RXPayloadLenght 3					/* Fixed RX data packet length in bytes */ 
 #define TXPayloadLenght RXPayloadLenght		/* Fixed TX data packet length in bytes */ 
 
 unsigned char rx_payload[RXPayloadLenght+1];
 unsigned char tx_payload[TXPayloadLenght+1]={0x01,0x02,0x03,0x00};
+
+/* Start Timer0 with divider 1024 */
+#define START_TIMER0		TCCR0|=(1<<CS02)|(1<<CS01)|(1<CS00)
+#define STOP_TIMER0			TCCR0&=~(1<<CS02)|(1<<CS01)|(1<CS00)
+
+/* Status leds registers defines */
+#define ERROR_LED_DDR	DDRD
+#define ERROR_LED_PORT	PORTD
+#define ERROR_LED_PIN	PD6
+
+#define MODE_LED_DDR	DDRD
+#define MODE_LED_PORT	PORTD
+#define MODE_LED_PIN	PD7
+
+/* Marker variables */
+volatile unsigned char pwr_on; 		/* pwr_on = 1 - device is switched on
+									   pwr_on = 0 - device is switched off */
+
+volatile unsigned char lightmode=0;	/* Light mode */
+
+volatile unsigned char tx_error=0; 	/* tx_error = 1 - TX error has occurred
+									   tx_error = 0 - TX was successful */
 
 volatile unsigned char re=0;
 
@@ -40,6 +68,33 @@ char *IntToStr(int value, int radix)
 void IRQ_Init(void)
 {
 	EIMSK|=(1<<INT0);
+}
+
+
+/* Status leds initialization */
+void LEDS_Init(void)
+{
+	ERROR_LED_DDR|=(1<<ERROR_LED_PIN);
+	ERROR_LED_PORT&=~(1<<ERROR_LED_PIN);
+	
+	MODE_LED_DDR|=(1<<MODE_LED_PIN);
+	MODE_LED_PORT&=~(1<<MODE_LED_PIN);
+}
+
+/* Timer0 initialization (Timer stopped) */
+void Timer0_Init(void) 
+{
+	TIMSK|=(1<<TOIE0);
+}
+
+
+/* Timer0 overflow interrupt handle */
+ISR(TIMER0_OVF_vect) 
+{
+	if (ERROR_LED_PORT & (1<<ERROR_LED_PIN)) 
+		ERROR_LED_PORT&=~(1<<ERROR_LED_PIN);
+	else
+		ERROR_LED_PORT|=(1<<ERROR_LED_PIN);
 }
 
 
@@ -130,6 +185,8 @@ ISR(INT0_vect)
 			SPI_SendByte_Master(buff|(0x10)); 
 			SPI_CS1_HIGH; 
 			
+			tx_error=1;
+			
 			/* LCD debug output */
 			LcdWriteCom(SECOND_STRING);
 			LcdWriteString("Fail");
@@ -139,6 +196,12 @@ ISR(INT0_vect)
 	}		
 	/* UART debug output */
 	UART1_SendString("\x0A\x0D");
+}
+
+/* Send a wireless command function */
+void SendCommand(unsigned char command) {
+	tx_payload[0]=command;
+	nRF24L01_SendData(tx_payload, RXPayloadLenght);
 }
 
 
@@ -165,6 +228,40 @@ int main(void)
 	/* Main loop */
     while(1)
     {
+		/* Buttons and switches polling */
+		if (MODE_BUTTON) {
+			/* Checking light mode */
+			if (lightmode != LIGHT_MODES_NUMBER) 
+				lightmode++;
+			else 
+				lightmode=1;
+			switch (lightmode) {
+				case 1: SendCommand(COMM_INSTANT); break;
+				case 2: SendCommand(COMM_FASTFLASH); break;
+				case 3: SendCommand(COMM_SLOWFLASH); break;
+				default: break;
+			}
+		}
+		else if (FLASH_BUTTON) {
+			/* Flash mode of front light while button is pressed  */
+		}
+		else if ((ON_OFF_SWITCH == 1)  && (lightmode == 0)) {
+			SendCommand(COMM_ON);
+			lightmode=DEFAULT_LIGHT_MODE;
+		}
+		else if ((ON_OFF_SWITCH == 0) && (lightmode > 0)) {
+			SendCommand(COMM_OFF);
+			lightmode=0;
+		}
+		else if (SOUND_SWITCH == 1) {
+			/* Beep sound on */
+		}
+		else if (SOUND_SWITCH == 0) {
+			/* Beep sound off */
+		}
+		_delay_ms(250);
+		
+		#if 0
 		/* test */
 		tx_payload[0]=COMM_ON;
 		nRF24L01_SendData(tx_payload, RXPayloadLenght);
@@ -181,6 +278,7 @@ int main(void)
 		tx_payload[0]=COMM_OFF;
 		nRF24L01_SendData(tx_payload, RXPayloadLenght);
 		_delay_ms(2000);
+		#endif
 		
 		#if 0
 		/* LCD debug output */
