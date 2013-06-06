@@ -215,6 +215,7 @@ int main(void)
 	nRF24L01_Init();
 	UART1_Init(MYUBRR);
 	SPI_Init_Master();
+	Buttons_Init();
 	
 	nRF24L01_Standby_1();
 	nRF24L01_SetRXPayloadLenght(RXPayloadLenght);

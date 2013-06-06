@@ -1,7 +1,7 @@
 #include "buttons.h"
 
 /* Buttons initialization */
-void nRF24L01_Init(void)
+void Buttons_Init(void)
 {
 	/* Set all PINs as input with internal pull-ups  */ 
 	BUTTON_1_DDR&=~(1<<BUTTON_1_PIN);

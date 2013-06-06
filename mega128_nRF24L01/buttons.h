@@ -1,6 +1,8 @@
 #ifndef _BUTTONS_H_
 #define _BUTTONS_H_ 1
 
+#include <avr/io.h>
+
 /* Buttons registers defines */
 #define BUTTON_1_DDR		DDRA
 #define BUTTON_1_PORT		PORTA
@@ -28,5 +30,8 @@
 #define FLASH_BUTTON	(!(BUTTON_2_PIN_REG & (1<<BUTTON_2_PIN)))
 #define ON_OFF_SWITCH	(!(SWITCH_1_PIN_REG & (1<<SWITCH_1_PIN)))
 #define SOUND_SWITCH	(!(SWITCH_2_PIN_REG & (1<<SWITCH_2_PIN)))
+
+/* */
+void Buttons_Init(void);
 
 #endif /* _BUTTONS_H_ */
