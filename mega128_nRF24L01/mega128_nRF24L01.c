@@ -52,22 +52,36 @@ unsigned char tx_payload[TXPayloadLenght+1]={0x01,0x02,0x03,0x00};
 /* Counter of Timer ticks for mode led */
 unsigned char mode_led_counter=0;
 /* Flashes per second for mode led */
-unsigned char mode_led_fps=0;
+volatile unsigned char mode_led_fps=0;
 /* Counter of Timer ticks for error led */
 unsigned char error_led_counter=0;
 /* Flashes per second for error led */
-unsigned char error_led_fps=0;
+volatile unsigned char error_led_fps=0;
+
+volatile unsigned char abv=0;
 
 /* Leds control commands */
-#define MODE_LED_START_FAST		mode_led_fps=FASTFLASH_LED_FPS
-#define MODE_LED_START_SLOW		mode_led_fps=SLOWFLASH_LED_FPS
-#define MODE_LED_START_INSTANT	mode_led_fps=0; \
-								MODE_LED_PORT|=(1<<MODE_LED_PORT);
-#define MODE_LED_STOP			mode_led_fps=0; \
-								MODE_LED_PORT&=~(1<<MODE_LED_PIN)
-#define ERROR_LED_START			error_led_fps=FASTFLASH_LED_FPS
-#define ERROR_LED_STOP			error_led_fps=0; \
-								ERROR_LED_PORT&=~(1<<ERROR_LED_PIN)
+#define MODE_LED_START_FAST		do{\
+								mode_led_fps=FASTFLASH_LED_FPS;\
+								}while(0)							
+#define MODE_LED_START_SLOW		do{\
+								mode_led_fps=SLOWFLASH_LED_FPS;\
+								}while(0)
+#define MODE_LED_START_INSTANT	do{\
+								mode_led_fps=0;\
+								MODE_LED_PORT|=(1<<MODE_LED_PIN);\
+								}while(0)								
+#define MODE_LED_STOP			do{\
+								mode_led_fps=0;\
+								MODE_LED_PORT&=~(1<<MODE_LED_PIN);\
+								}while(0)			
+#define ERROR_LED_START			do{\
+								error_led_fps=ERROR_LED_FPS;\
+								}while(0)
+#define ERROR_LED_STOP			do{\
+								error_led_fps=0;\
+								ERROR_LED_PORT&=~(1<<ERROR_LED_PIN);\
+								}while(0)	
 
 /* Delay defines */
 #define SWITCH_DELAY	_delay_ms(100)
@@ -212,6 +226,7 @@ ISR(INT0_vect)
 			
 			ERROR_LED_STOP;
 			switch (lightmode){
+				case 0: MODE_LED_STOP; break;
 				case 1:	MODE_LED_START_INSTANT; break;
 				case 2:	MODE_LED_START_FAST; break;
 				case 3:	MODE_LED_START_SLOW; break;
@@ -271,6 +286,9 @@ int main(void)
 	Leds_Init();
 	Timer0_Init();
 	START_TIMER0;
+	
+	MODE_LED_PORT|=(1<<MODE_LED_PIN);
+	ERROR_LED_PORT|=(1<<ERROR_LED_PIN);
 	
 	nRF24L01_Standby_1();
 	nRF24L01_SetRXPayloadLenght(RXPayloadLenght);
