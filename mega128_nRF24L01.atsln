@@ -1,0 +1,20 @@
+
+Microsoft Visual Studio Solution File, Format Version 11.00
+# AvrStudio Solution File, Format Version 11.00
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "mega128_nRF24L01", "mega128_nRF24L01\mega128_nRF24L01.cproj", "{BB127A9D-704B-41A7-BB65-E55D9FB8EF5D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AVR = Debug|AVR
+		Release|AVR = Release|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BB127A9D-704B-41A7-BB65-E55D9FB8EF5D}.Debug|AVR.ActiveCfg = Debug|AVR
+		{BB127A9D-704B-41A7-BB65-E55D9FB8EF5D}.Debug|AVR.Build.0 = Debug|AVR
+		{BB127A9D-704B-41A7-BB65-E55D9FB8EF5D}.Release|AVR.ActiveCfg = Release|AVR
+		{BB127A9D-704B-41A7-BB65-E55D9FB8EF5D}.Release|AVR.Build.0 = Release|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
