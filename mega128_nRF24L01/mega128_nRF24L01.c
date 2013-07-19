@@ -18,6 +18,7 @@
 #include "wh_lcd.h"
 #include "commands.h"
 #include "buttons.h"
+#include <avr/eeprom.h>
 
 /* Overall number of light modes */
 #define	LIGHT_MODES_NUMBER	3 
@@ -45,9 +46,9 @@ unsigned char tx_payload[TXPayloadLenght+1]={0x01,0x02,0x03,0x00};
 #define MODE_LED_PIN	PD7
 
 /* Flashes per second defines */
-#define FASTFLASH_LED_FPS	15
-#define SLOWFLASH_LED_FPS	5
-#define ERROR_LED_FPS		3
+#define FASTFLASH_LED_FPS	12
+#define SLOWFLASH_LED_FPS	3
+#define ERROR_LED_FPS		2
 
 /* Counter of Timer ticks for mode led */
 unsigned char mode_led_counter=0;
@@ -91,12 +92,13 @@ volatile unsigned char abv=0;
 volatile unsigned char pwr_on; 		/* pwr_on = 1 - device is switched on
 									   pwr_on = 0 - device is switched off */
 
-volatile unsigned char lightmode=0;	/* Light mode */
-
 volatile unsigned char tx_error=0; 	/* tx_error = 1 - TX error has occurred
 									   tx_error = 0 - TX was successful */
 
 volatile unsigned char re=0;
+
+unsigned char EEMEM eemem_last_mode; 	/* Eeprom variable containing blinking mode */
+volatile unsigned char mode = 0;		/* Blinking mode which will be restored after on/off */
 
 
 char *IntToStr(int value, int radix)
@@ -153,7 +155,6 @@ ISR(TIMER0_OVF_vect)
 	#endif
 }
 
-
 /* UART RX interrupt handle */
 ISR(USART1_RX_vect)
 {
@@ -161,7 +162,6 @@ ISR(USART1_RX_vect)
 	if (tx_payload[0]==0x01) tx_payload[0]=0x02;
 		else tx_payload[0]=0x01;
 }
-
 
 /* INT0 interrupt handle, connected to the nRF24L01 "IRQ" pin */
 ISR(INT0_vect)
@@ -225,7 +225,7 @@ ISR(INT0_vect)
 			SPI_CS1_HIGH; 
 			
 			ERROR_LED_STOP;
-			switch (lightmode){
+			switch (mode){
 				case 0: MODE_LED_STOP; break;
 				case 1:	MODE_LED_START_INSTANT; break;
 				case 2:	MODE_LED_START_FAST; break;
@@ -275,8 +275,6 @@ void SendCommand(unsigned char command) {
 /* Main routine */
 int main(void)
 {
-	unsigned char count=0; 
-	
 	IRQ_Init();	
 	InitLcd();
 	nRF24L01_Init();
@@ -285,14 +283,15 @@ int main(void)
 	Buttons_Init();
 	Leds_Init();
 	Timer0_Init();
-	START_TIMER0;
 	
+	/*
 	MODE_LED_PORT|=(1<<MODE_LED_PIN);
 	ERROR_LED_PORT|=(1<<ERROR_LED_PIN);
+	*/
 	
 	nRF24L01_Standby_1();
 	nRF24L01_SetRXPayloadLenght(RXPayloadLenght);
-	//nRF24L01_Receive_On();
+
 	sei();
 	
 	/* LCD debug output */
@@ -307,32 +306,58 @@ int main(void)
     while(1)
     {
 		/* Buttons and switches polling */
-		if (MODE_BUTTON && (lightmode != 0)) {
+		if (MODE_BUTTON && (mode != 0)) {
 			/* Checking light mode */
-			if (lightmode != LIGHT_MODES_NUMBER) 
-				lightmode++;
+			if (mode != LIGHT_MODES_NUMBER) 
+				mode++;
 			else 
-				lightmode=1;
-			switch (lightmode) {
+				mode=1;
+			switch (mode) {
 				case 1: SendCommand(COMM_INSTANT); break;
 				case 2: SendCommand(COMM_FASTFLASH); break;
 				case 3: SendCommand(COMM_SLOWFLASH); break;
 				default: break;
 			}
+			eeprom_update_byte(&eemem_last_mode, mode);
 			BUTTON_DELAY;
+			
+			/* LCD debug output */
+			LcdWriteCom(FIRST_STRING);
+			LcdWriteString(IntToStr(mode, 10));
+			
 		}
 		else if (FLASH_BUTTON) {
 			/* Flash mode of front light while button is pressed  */
 		}
-		else if ((ON_OFF_SWITCH == 1)  && (lightmode == 0)) {
-			lightmode=DEFAULT_LIGHT_MODE;
-			SendCommand(COMM_INSTANT);
+		else if ((ON_OFF_SWITCH == 1)  && (mode == 0)) {
+			/* Turn rear light on */
+			mode = eeprom_read_byte(&eemem_last_mode);
+			switch (mode) {
+				case 1: SendCommand(COMM_INSTANT); break;
+				case 2: SendCommand(COMM_FASTFLASH); break;
+				case 3: SendCommand(COMM_SLOWFLASH); break;
+				default: mode = DEFAULT_LIGHT_MODE; break;
+			}
+			START_TIMER0;
 			SWITCH_DELAY;
+			
+			/* LCD debug output */
+			LcdWriteCom(FIRST_STRING);
+			LcdWriteString(IntToStr(mode, 10));
+		
 		}
-		else if ((ON_OFF_SWITCH == 0) && (lightmode != 0)) {
-			lightmode=0;
+		else if ((ON_OFF_SWITCH == 0) && (mode != 0)) {
+			/* Turn rear light off */
 			SendCommand(COMM_OFF);
+			eeprom_update_byte(&eemem_last_mode, mode);
+			mode=0;
+			STOP_TIMER0;
 			SWITCH_DELAY;
+			
+			/* LCD debug output */
+			LcdWriteCom(FIRST_STRING);
+			LcdWriteString(IntToStr(mode, 10));
+			
 		}
 		else if (SOUND_SWITCH == 1) {
 			/* Beep sound on */
@@ -340,6 +365,5 @@ int main(void)
 		else if (SOUND_SWITCH == 0) {
 			/* Beep sound off */
 		}
-		//_delay_ms(250);
 	}
 }
