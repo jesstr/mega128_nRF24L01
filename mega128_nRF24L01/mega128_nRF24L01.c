@@ -2,7 +2,7 @@
  * mega128_nRF24L01.c
  *
  * Created: 17.07.2012 11:26:44
- *  Author: Черствов
+ *  Author: Pavel Cherstvov
  */
 
 /*FCU must be defined at "Properties->Toolchain->Symbols" as "F_CPU=8000000". */ 
